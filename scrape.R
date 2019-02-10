@@ -34,4 +34,4 @@ df$text <- ifelse(df$Language == "English",df$Motto,df$Translation)
 # add country column
 df$country <- rep(countries,n_rows)
 
-write_csv("school_mottos.csv")
+write_csv(df, "school_mottos.csv")
