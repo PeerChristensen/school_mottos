@@ -6,6 +6,7 @@ library(widyr)
 library(magrittr)
 library(ggraph)
 library(igraph)
+library(wordcloud)
 
 # load data
 df <- read_csv("school_mottos.csv")
@@ -19,7 +20,7 @@ df %<>%
 
 # most frequent words
 dfFreqUS <- df %>%
-  filter(country != "United_States") %>%
+  filter(Language == "Latin") %>%
   group_by(word) %>%
   summarise(n = n()) %>%
   arrange(desc(n)) %>%
@@ -52,5 +53,8 @@ pairs_plot <- word_pairs %>%
   theme_void() 
 
 pairs_plot
+
+# wordcloud
+wordcloud(df$word)
 
 
