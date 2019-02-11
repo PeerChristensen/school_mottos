@@ -8,21 +8,77 @@ library(ggraph)
 library(igraph)
 library(wordcloud)
 
+
+# Latin vs. not Latin
+
 # load data
 df <- read_csv("school_mottos.csv")
 
-# tokenize and remove stop words
+# tokenize and remove stop words, group on basis of language
 df %<>%
   unnest_tokens(word, text) %>%
   anti_join(stop_words)     %>%
-  add_count(word)           %>%
+  add_count(word,Language == "Latin") %>%
   filter(n > 1, word != "")
 
-# most frequent words
-dfFreqUS <- df %>%
-  filter(Language == "Latin") %>%
+
+# Create the log odds ratio of each word
+df_ratios <- df %>%
+  count(word, `Language == "Latin"`) %>%
   group_by(word) %>%
-  summarise(n = n()) %>%
-  arrange(desc(n)) %>%
-  top_n(20,n) %>%
-  mutate(row = rev(row_number())) 
+  filter(sum(n) >= 5) %>%
+  spread(`Language == "Latin"`, n, fill = 0) %>%
+  ungroup() %>%
+  mutate_if(is.numeric, funs((. + 1) / sum(. + 1))) %>%
+  mutate(logratio = log2(`FALSE`/ `TRUE`)) %>%
+  arrange(desc(logratio))
+
+# Plot the log odds ratio for each word by device
+df_ratios %>%
+  group_by(logratio > 0) %>%
+  top_n(20, abs(logratio)) %>%
+  ungroup() %>%
+  mutate(word = reorder(word, logratio)) %>%
+  ggplot(aes(word, logratio, fill = logratio < 0)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  ylab("Not Latin / Latin log ratio") +
+  scale_fill_manual(name = "", labels = c("Not Latin", "Latin"),
+                    values = c("red", "lightblue"))
+  
+# US vs. non-US
+
+# load data
+df <- read_csv("school_mottos.csv")
+
+# tokenize and remove stop words, group on basis of language
+df %<>%
+  unnest_tokens(word, text) %>%
+  anti_join(stop_words)     %>%
+  add_count(word,country == "United_States") %>%
+  filter(n > 1, word != "")
+
+# Create the log odds ratio of each word
+df_ratiosUS <- df %>%
+  count(word, `country == "United_States"`) %>%
+  group_by(word) %>%
+  filter(sum(n) >= 5) %>%
+  spread(`country == "United_States"`, n, fill = 0) %>%
+  ungroup() %>%
+  mutate_if(is.numeric, funs((. + 1) / sum(. + 1))) %>%
+  mutate(logratio = log2(`FALSE`/ `TRUE`)) %>%
+  arrange(desc(logratio))
+
+# Plot the log odds ratio for each word by device
+df_ratiosUS %>%
+  group_by(logratio > 0) %>%
+  top_n(20, abs(logratio)) %>%
+  ungroup() %>%
+  mutate(word = reorder(word, logratio)) %>%
+  ggplot(aes(word, logratio, fill = logratio < 0)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  ylab("Non-US / US log ratio") +
+  scale_fill_manual(name = "", labels = c("Non-US", "US"),
+                    values = c("red", "lightblue"))
+
