@@ -7,6 +7,7 @@ library(magrittr)
 library(ggraph)
 library(igraph)
 library(wordcloud)
+library(tm)
 
 # load data
 df <- read_csv("school_mottos.csv")
@@ -16,23 +17,25 @@ df %<>%
   unnest_tokens(word, text) %>%
   anti_join(stop_words)     %>%
   add_count(word)           %>%
-  filter(n > 1, word != "")
+  filter(n > 5, word != "")
+
+df$word <- removeNumbers(df$word)
 
 # most frequent words
-dfFreqUS <- df %>%
-  filter(Language == "Latin") %>%
+dfFreq <- df %>%
+  #filter(Language == "Latin") %>%
   group_by(word) %>%
   summarise(n = n()) %>%
   arrange(desc(n)) %>%
   top_n(20,n) %>%
   mutate(row = rev(row_number())) 
 
-dfFreqUS %>%
+dfFreq %>%
   ggplot(aes(x=row,y=n)) +
     geom_col(show.legend = FALSE,width = .9) +
     scale_x_continuous( 
-    breaks = dfFreqUS$row,
-    labels = dfFreqUS$word,
+    breaks = dfFreq$row,
+    labels = dfFreq$word,
     expand = c(0,0)) +
   coord_flip() 
     

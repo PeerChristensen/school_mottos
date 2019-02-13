@@ -7,6 +7,7 @@ library(magrittr)
 library(ggraph)
 library(igraph)
 library(wordcloud)
+library(tm)
 
 
 # Latin vs. not Latin
@@ -19,11 +20,12 @@ df %<>%
   unnest_tokens(word, text) %>%
   anti_join(stop_words)     %>%
   add_count(word,Language == "Latin") %>%
-  filter(n > 1, word != "")
+  filter(n > 5, word != "")
+  
+df$word <- removeNumbers(df$word)
 
-
-# Create the log odds ratio of each word
-df_ratios <- df %>%
+# Create the log odds ratio of each word, group by Latin language
+df_ratios_Latin <- df %>%
   count(word, `Language == "Latin"`) %>%
   group_by(word) %>%
   filter(sum(n) >= 5) %>%
@@ -33,8 +35,8 @@ df_ratios <- df %>%
   mutate(logratio = log2(`FALSE`/ `TRUE`)) %>%
   arrange(desc(logratio))
 
-# Plot the log odds ratio for each word by device
-df_ratios %>%
+# Plot 
+df_ratios_Latin %>%
   group_by(logratio > 0) %>%
   top_n(20, abs(logratio)) %>%
   ungroup() %>%
@@ -56,10 +58,12 @@ df %<>%
   unnest_tokens(word, text) %>%
   anti_join(stop_words)     %>%
   add_count(word,country == "United_States") %>%
-  filter(n > 1, word != "")
+  filter(n > 5, word != "")
+
+df$word <- removeNumbers(df$word)
 
 # Create the log odds ratio of each word
-df_ratiosUS <- df %>%
+df_ratios_US <- df %>%
   count(word, `country == "United_States"`) %>%
   group_by(word) %>%
   filter(sum(n) >= 5) %>%
@@ -69,8 +73,8 @@ df_ratiosUS <- df %>%
   mutate(logratio = log2(`FALSE`/ `TRUE`)) %>%
   arrange(desc(logratio))
 
-# Plot the log odds ratio for each word by device
-df_ratiosUS %>%
+# Plot 
+df_ratios_US %>%
   group_by(logratio > 0) %>%
   top_n(20, abs(logratio)) %>%
   ungroup() %>%
